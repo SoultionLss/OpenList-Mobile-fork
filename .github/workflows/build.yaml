@@ -231,6 +231,8 @@ jobs:
           security import "$CERT_P12_PATH" -k "$KEYCHAIN_PATH" -P "$IOS_CERT_PASSWORD" -A
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
           PROFILE_PATH="${RUNNER_TEMP}/openlist.mobileprovision"
           echo "$IOS_PROVISION_PROFILE" | base64 --decode > "$PROFILE_PATH"
 
@@ -266,6 +268,8 @@ jobs:
           if [ -z "$BUNDLE_ID" ]; then
             BUNDLE_ID="org.oplist.app"
           fi
+
+          export FLUTTER_XCODE_BUILD_ARGS="CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=$team_id CODE_SIGN_IDENTITY=Apple\ Distribution PROVISIONING_PROFILE_SPECIFIER=$profile_name PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID"
 
           EXPORT_OPTIONS_PATH="${RUNNER_TEMP}/exportOptions.plist"
           /usr/libexec/PlistBuddy -c "Clear dict" "$EXPORT_OPTIONS_PATH" || true
