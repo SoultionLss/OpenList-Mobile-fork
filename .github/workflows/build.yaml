@@ -232,6 +232,8 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
           security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+          SIGNING_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | head -n 1 | sed -E 's/.*"(.*)"/\1/')
+          echo "signing_identity=$SIGNING_IDENTITY" >> $GITHUB_ENV
 
           PROFILE_PATH="${RUNNER_TEMP}/openlist.mobileprovision"
           echo "$IOS_PROVISION_PROFILE" | base64 --decode > "$PROFILE_PATH"
@@ -269,13 +271,14 @@ jobs:
             BUNDLE_ID="org.oplist.app"
           fi
 
-          export FLUTTER_XCODE_BUILD_ARGS="CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=$team_id CODE_SIGN_IDENTITY=Apple\ Distribution PROVISIONING_PROFILE_SPECIFIER=$profile_name PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID"
+          export FLUTTER_XCODE_BUILD_ARGS="CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=$team_id CODE_SIGN_IDENTITY=$signing_identity PROVISIONING_PROFILE_SPECIFIER=$profile_name PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID"
 
           EXPORT_OPTIONS_PATH="${RUNNER_TEMP}/exportOptions.plist"
           /usr/libexec/PlistBuddy -c "Clear dict" "$EXPORT_OPTIONS_PATH" || true
           /usr/libexec/PlistBuddy -c "Add :method string app-store" "$EXPORT_OPTIONS_PATH"
           /usr/libexec/PlistBuddy -c "Add :signingStyle string manual" "$EXPORT_OPTIONS_PATH"
           /usr/libexec/PlistBuddy -c "Add :teamID string $team_id" "$EXPORT_OPTIONS_PATH"
+          /usr/libexec/PlistBuddy -c "Add :signingCertificate string $signing_identity" "$EXPORT_OPTIONS_PATH"
           /usr/libexec/PlistBuddy -c "Add :provisioningProfiles dict" "$EXPORT_OPTIONS_PATH"
           /usr/libexec/PlistBuddy -c "Add :provisioningProfiles:$BUNDLE_ID string $profile_name" "$EXPORT_OPTIONS_PATH"
 
